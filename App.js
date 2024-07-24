@@ -12,12 +12,41 @@ function App() {
    const [multiplicationNumber, setmultiplicationNumber] = useState('1');
    const [multiplicationOperator, setmultiplicationOperator] = useState('*');
    const [multiplication, setMultiplication] = useState(false);
+   const [IllegalAction, setIllegalAction] = useState(false);
    // Receiving a command from the user, checking and updating the values according to it
    const handlePress = (value) => {
-     if (!['+','=','+-', '-', '*', '/','C'].includes(value)) {
-       setDisplay(display === '0' ? value : display + value);
-     } else{
-         if (['+','+-' ,'-'].includes(value)) {
+          if (operator === '=' ||  display === 'Illegal action'){
+            //Returns to a starting point in case of error or end of calculation
+            setDisplay('0');
+            setFirstNum('0');
+            setOperator('+');
+            setmultiplicationNumber('1');
+            setmultiplicationOperator('*');
+            setMultiplication(false);
+            setIllegalAction(false);
+          }else if (!['+','=','+-', '%','-', '*', '/','C'].includes(value)) {
+            if(IllegalAction == true){
+              setDisplay('Illegal action');
+            }else{
+              setDisplay(display === '0' ? value : display + value);
+            }
+            setIllegalAction(false);
+          } else if(['%'].includes(value)){
+            if(multiplication === true){
+              setmultiplicationNumber(calculate(value, multiplicationNumber, display));
+              //Not so pleasing to the eye but very simplifying
+              setDisplay('1');
+            }else{
+              //Display is only updated every login, so there's a temporary variable here
+              percent_display = calculate(value, firstNum, display);
+              setFirstNum(calculate(operator, firstNum, percent_display));
+              setDisplay('0');
+            }
+            setIllegalAction(true);
+          }else if (['+-'].includes(value)) {
+          setDisplay('-' + display);
+          setIllegalAction(true);
+          } else if (['+','-'].includes(value)) {
             if(multiplication === true){
               // Add or subtract with the previous oprotor for multiplication
               temporalCalculation = calculate(multiplicationOperator, multiplicationNumber, display);
@@ -28,29 +57,36 @@ function App() {
               setFirstNum(calculate(operator, firstNum, display));
               setOperator(value);
             } 
+            setIllegalAction(false);
             setDisplay('0');
           } else if(['*', '/'].includes(value)) {
             setmultiplicationNumber(calculate(multiplicationOperator, multiplicationNumber, display));
             setmultiplicationOperator(value);
             setMultiplication(true);
             setDisplay('0');
+            setIllegalAction(false);
           } else if (value === '=') {
           // If we received a comparison order, you returned a reply
-          if (multiplication === true) {
-            temporalCalculation = calculate(multiplicationOperator, multiplicationNumber, display);
-            result = calculate(operator, firstNum, temporalCalculation);
-            setmultiplicationNumber('1');
-            setMultiplication(false);
-          } else {
-            result = calculate(operator, firstNum, display);
-          }
-          setDisplay(String(result));;
+            if (multiplication === true) {
+              temporalCalculation = calculate(multiplicationOperator, multiplicationNumber, display);
+              result = calculate(operator, firstNum, temporalCalculation);
+              setmultiplicationNumber('1');
+              setMultiplication(false);
+            } else {
+              result = calculate(operator, firstNum, display);
+            }
+          setDisplay(String(result));
+          setOperator(value);
+          setIllegalAction(false);
           } else if (value === 'C') {
             setDisplay('0');
             setFirstNum('0');
             setOperator('+');
+            setmultiplicationNumber('1');
+            setmultiplicationOperator('*');
+            setMultiplication(false);
+            setIllegalAction(false);
           }
-     }
    };
  
   return (
@@ -170,6 +206,9 @@ function calculate(operator, num1, num2) {
       break;
     case '/':
       result = firstNumber / secondNumber;
+      break;
+      case '%':
+      result = (firstNumber / 100) * secondNumber;
       break;
     default:
       result = 'Invalid operator';
